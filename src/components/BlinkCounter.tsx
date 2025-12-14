@@ -75,9 +75,13 @@ const BlinkCounter = ({ count, isDetecting, lastBlink, className }: BlinkCounter
             <span className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">3</span>
             <span className="text-muted-foreground">Fan ON</span>
           </div>
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/20">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
+            <span className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">4</span>
+            <span className="text-muted-foreground">Fan OFF</span>
+          </div>
+          <div className="col-span-2 flex items-center gap-2 p-2 rounded-lg bg-destructive/20">
             <span className="w-6 h-6 rounded-full bg-destructive/30 flex items-center justify-center text-destructive font-bold">5</span>
-            <span className="text-destructive">Emergency</span>
+            <span className="text-destructive">Emergency Alert</span>
           </div>
         </div>
       </div>
