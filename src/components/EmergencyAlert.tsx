@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Mail, X, Send, Settings } from "lucide-react";
 import { Button } from "./ui/button";
@@ -9,10 +9,11 @@ import emailjs from "@emailjs/browser";
 interface EmergencyAlertProps {
   isActive: boolean;
   onDismiss: () => void;
+  userEmail?: string | null;
   className?: string;
 }
 
-const EmergencyAlert = ({ isActive, onDismiss, className }: EmergencyAlertProps) => {
+const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: EmergencyAlertProps) => {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -21,6 +22,13 @@ const EmergencyAlert = ({ isActive, onDismiss, className }: EmergencyAlertProps)
   const [serviceId, setServiceId] = useState(() => localStorage.getItem("emailjs_service_id") || "");
   const [templateId, setTemplateId] = useState(() => localStorage.getItem("emailjs_template_id") || "");
   const [publicKey, setPublicKey] = useState(() => localStorage.getItem("emailjs_public_key") || "");
+
+  // Auto-fill with user's email when logged in
+  useEffect(() => {
+    if (userEmail) {
+      setEmail(userEmail);
+    }
+  }, [userEmail]);
 
   const saveSettings = () => {
     localStorage.setItem("emailjs_service_id", serviceId);
@@ -193,6 +201,12 @@ const EmergencyAlert = ({ isActive, onDismiss, className }: EmergencyAlertProps)
                   className="pl-10 bg-secondary border-destructive/30 focus:border-destructive"
                 />
               </div>
+
+              {userEmail && (
+                <p className="text-xs text-center text-success">
+                  Auto-filled with your account email
+                </p>
+              )}
 
               <Button
                 onClick={handleSendEmail}

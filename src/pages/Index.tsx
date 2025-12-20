@@ -1,12 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import WebcamFeed, { WebcamFeedRef } from "@/components/WebcamFeed";
 import BlinkCounter from "@/components/BlinkCounter";
 import ApplianceDashboard from "@/components/ApplianceDashboard";
 import EmergencyAlert from "@/components/EmergencyAlert";
 import { useBlinkDetection } from "@/hooks/useBlinkDetection";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { Camera, CameraOff, RotateCcw, Eye, Zap, Shield } from "lucide-react";
+import { Camera, CameraOff, RotateCcw, Eye, Zap, Shield, LogOut, Loader2 } from "lucide-react";
 
 const BLINK_SEQUENCE_TIMEOUT = 1500; // Time window to count consecutive blinks
 
@@ -21,6 +23,16 @@ const Index = () => {
 
   const webcamRef = useRef<WebcamFeedRef>(null);
   const sequenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
 
   // Process blink sequences
   const processBlinkSequence = useCallback((count: number) => {
@@ -143,6 +155,35 @@ const Index = () => {
     setEmergencyActive(false);
   }, []);
 
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        title: "Sign Out Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed Out",
+        description: "You have been signed out successfully.",
+      });
+      navigate('/auth');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -163,7 +204,7 @@ const Index = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               {isInitialized ? (
                 <span className="flex items-center gap-1.5 text-xs text-success">
                   <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
@@ -175,6 +216,20 @@ const Index = () => {
                   Initializing...
                 </span>
               )}
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground hidden sm:block">
+                  {user.email}
+                </span>
+                <Button
+                  onClick={handleSignOut}
+                  variant="ghost"
+                  size="icon"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -283,8 +338,12 @@ const Index = () => {
         </div>
       </main>
 
-      {/* Emergency Alert Modal */}
-      <EmergencyAlert isActive={emergencyActive} onDismiss={dismissEmergency} />
+      {/* Emergency Alert Modal - now with user email */}
+      <EmergencyAlert 
+        isActive={emergencyActive} 
+        onDismiss={dismissEmergency}
+        userEmail={user?.email}
+      />
     </div>
   );
 };
