@@ -1,8 +1,8 @@
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -46,7 +46,11 @@
     --glow-primary: 0 0 30px hsl(185 75% 50% / 0.4);
     --glow-success: 0 0 30px hsl(142 70% 45% / 0.4);
     --glow-destructive: 0 0 30px hsl(0 72% 51% / 0.4);
-    --gradient-primary: linear-gradient(135deg, hsl(185 75% 50%), hsl(200 80% 45%));
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(185 75% 50%),
+      hsl(200 80% 45%)
+    );
     --gradient-card: linear-gradient(180deg, hsl(222 47% 10%), hsl(222 47% 6%));
     --gradient-danger: linear-gradient(135deg, hsl(0 72% 51%), hsl(25 90% 50%));
 
@@ -90,11 +94,16 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Orbitron', sans-serif;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Orbitron", sans-serif;
   }
 }
 
@@ -131,7 +140,8 @@
   }
 
   @keyframes pulse-glow {
-    0%, 100% {
+    0%,
+    100% {
       box-shadow: 0 0 20px hsl(185 75% 50% / 0.3);
     }
     50% {
@@ -140,7 +150,8 @@
   }
 
   @keyframes blink-indicator {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
       transform: scale(1);
     }
@@ -160,7 +171,8 @@
   }
 
   @keyframes emergency-pulse {
-    0%, 100% {
+    0%,
+    100% {
       box-shadow: 0 0 20px hsl(0 72% 51% / 0.4);
     }
     50% {
