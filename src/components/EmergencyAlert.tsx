@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Mail, X, Send, Settings } from "lucide-react";
 import { Button } from "./ui/button";
@@ -34,14 +34,20 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
     }
   }, [userEmail]);
 
-  // Countdown timer for auto-send
+  // Track if we should auto-send (when countdown reaches 0)
+  const [shouldAutoSend, setShouldAutoSend] = useState(false);
+
+  // Ref to hold the latest handleSendEmail function
+  const handleSendEmailRef = useRef<() => void>(() => {});
+
+  // Countdown timer logic
   useEffect(() => {
     if (!isActive || showSettings || isPaused || isSending) {
       return;
     }
 
     if (countdown <= 0) {
-      handleSendEmail();
+      setShouldAutoSend(true);
       return;
     }
 
@@ -52,11 +58,20 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
     return () => clearTimeout(timer);
   }, [isActive, countdown, showSettings, isPaused, isSending]);
 
+  // Handle auto-send when countdown completes
+  useEffect(() => {
+    if (shouldAutoSend && !isSending) {
+      setShouldAutoSend(false);
+      handleSendEmailRef.current();
+    }
+  }, [shouldAutoSend, isSending]);
+
   // Reset countdown when modal opens
   useEffect(() => {
     if (isActive) {
       setCountdown(COUNTDOWN_SECONDS);
       setIsPaused(false);
+      setShouldAutoSend(false);
     }
   }, [isActive]);
 
@@ -79,7 +94,7 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
     setShowSettings(false);
   };
 
-  const handleSendEmail = async () => {
+  const handleSendEmail = useCallback(async () => {
     if (!email || !email.includes("@")) {
       toast({
         title: "Invalid Email",
@@ -134,7 +149,12 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
     } finally {
       setIsSending(false);
     }
-  };
+  }, [email, serviceId, templateId, publicKey, onDismiss]);
+
+  // Keep the ref updated with latest handleSendEmail
+  useEffect(() => {
+    handleSendEmailRef.current = handleSendEmail;
+  }, [handleSendEmail]);
 
   if (!isActive) return null;
 
