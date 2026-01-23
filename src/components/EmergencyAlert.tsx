@@ -58,15 +58,6 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
     });
     setShowSettings(false);
   };
-    localStorage.setItem("emailjs_service_id", serviceId);
-    localStorage.setItem("emailjs_template_id", templateId);
-    localStorage.setItem("emailjs_public_key", publicKey);
-    toast({
-      title: "Settings Saved",
-      description: "EmailJS settings have been saved locally",
-    });
-    setShowSettings(false);
-  };
 
   const handleSendEmail = useCallback(async () => {
     if (!email || !email.includes("@")) {
