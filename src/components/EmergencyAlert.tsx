@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Mail, X, Send, Settings } from "lucide-react";
+import { AlertTriangle, Mail, X, Send } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { toast } from "@/hooks/use-toast";
-import emailjs from "@emailjs/browser";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EmergencyAlertProps {
   isActive: boolean;
@@ -16,13 +16,7 @@ interface EmergencyAlertProps {
 const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: EmergencyAlertProps) => {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  
-  // EmailJS settings (free tier - 200 emails/month)
-  const [serviceId, setServiceId] = useState(() => localStorage.getItem("emailjs_service_id") || "");
-  const [templateId, setTemplateId] = useState(() => localStorage.getItem("emailjs_template_id") || "");
-  const [publicKey, setPublicKey] = useState(() => localStorage.getItem("emailjs_public_key") || "");
 
   // Ref to hold the latest handleSendEmail function
   const handleSendEmailRef = useRef<() => void>(() => {});
@@ -48,17 +42,6 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
     }
   }, [isActive]);
 
-  const saveSettings = () => {
-    localStorage.setItem("emailjs_service_id", serviceId);
-    localStorage.setItem("emailjs_template_id", templateId);
-    localStorage.setItem("emailjs_public_key", publicKey);
-    toast({
-      title: "Settings Saved",
-      description: "EmailJS settings have been saved locally",
-    });
-    setShowSettings(false);
-  };
-
   const handleSendEmail = useCallback(async () => {
     if (!email || !email.includes("@")) {
       toast({
@@ -69,52 +52,36 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
       return;
     }
 
-    // Check if EmailJS is configured
-    if (!serviceId || !templateId || !publicKey) {
-      // Fallback to mailto
-      const subject = encodeURIComponent("EMERGENCY ALERT - Eye Blink Control System");
-      const body = encodeURIComponent(
-        `EMERGENCY ALERT!\n\nAn emergency alert has been triggered from the Eye Blink-Based Appliance Control System.\n\nTime: ${new Date().toLocaleString()}\n\nPlease respond immediately.`
-      );
-      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
-      toast({
-        title: "Email Client Opened",
-        description: "Configure EmailJS in settings for automatic sending",
-      });
-      return;
-    }
-
     setIsSending(true);
 
     try {
-      await emailjs.send(
-        serviceId,
-        templateId,
-        {
+      const { data, error } = await supabase.functions.invoke("send-emergency-email", {
+        body: {
           to_email: email,
-          subject: "EMERGENCY ALERT - Eye Blink Control System",
-          message: `EMERGENCY ALERT!\n\nAn emergency alert has been triggered from the Eye Blink-Based Appliance Control System.\n\nTime: ${new Date().toLocaleString()}\n\nPlease respond immediately.`,
           time: new Date().toLocaleString(),
         },
-        publicKey
-      );
+      });
+
+      if (error) {
+        throw error;
+      }
 
       toast({
         title: "Emergency Email Sent!",
         description: `Alert sent to ${email}`,
       });
       setEmailSent(true);
-    } catch (error) {
-      console.error("EmailJS error:", error);
+    } catch (error: any) {
+      console.error("Email error:", error);
       toast({
         title: "Failed to Send",
-        description: "Check your EmailJS settings or try mailto fallback",
+        description: error.message || "Please try again",
         variant: "destructive",
       });
     } finally {
       setIsSending(false);
     }
-  }, [email, serviceId, templateId, publicKey]);
+  }, [email]);
 
   // Keep the ref updated with latest handleSendEmail
   useEffect(() => {
@@ -131,15 +98,8 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
       )}
     >
       <div className="relative w-full max-w-md mx-4 p-8 rounded-2xl border-2 border-destructive bg-card animate-emergency-pulse">
-        {/* Settings & Close buttons */}
-        <div className="absolute top-4 right-4 flex gap-2">
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="p-2 rounded-full hover:bg-destructive/20 transition-colors"
-            title="EmailJS Settings"
-          >
-            <Settings className="w-5 h-5 text-muted-foreground" />
-          </button>
+        {/* Close button */}
+        <div className="absolute top-4 right-4">
           <button
             onClick={onDismiss}
             className="p-2 rounded-full hover:bg-destructive/20 transition-colors"
@@ -148,123 +108,66 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
           </button>
         </div>
 
-        {showSettings ? (
-          /* Settings Panel */
-          <div className="space-y-4">
-            <h3 className="font-display text-xl font-bold text-foreground mb-4">
-              EmailJS Settings (Free)
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Get free keys at{" "}
-              <a
-                href="https://www.emailjs.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary underline"
-              >
-                emailjs.com
-              </a>{" "}
-              (200 emails/month free)
-            </p>
-            <Input
-              placeholder="Service ID (e.g., service_xxx)"
-              value={serviceId}
-              onChange={(e) => setServiceId(e.target.value)}
-              className="bg-secondary"
-            />
-            <Input
-              placeholder="Template ID (e.g., template_xxx)"
-              value={templateId}
-              onChange={(e) => setTemplateId(e.target.value)}
-              className="bg-secondary"
-            />
-            <Input
-              placeholder="Public Key (e.g., xxx)"
-              value={publicKey}
-              onChange={(e) => setPublicKey(e.target.value)}
-              className="bg-secondary"
-            />
-            <Button onClick={saveSettings} className="w-full">
-              Save Settings
-            </Button>
-            <Button
-              onClick={() => setShowSettings(false)}
-              variant="outline"
-              className="w-full"
-            >
-              Back
-            </Button>
+        {/* Alert icon */}
+        <div className="flex justify-center mb-6">
+          <div className="w-20 h-20 rounded-full bg-destructive/20 flex items-center justify-center animate-pulse">
+            <AlertTriangle className="w-10 h-10 text-destructive" />
           </div>
-        ) : (
-          <>
-            {/* Alert icon */}
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 rounded-full bg-destructive/20 flex items-center justify-center animate-pulse">
-                <AlertTriangle className="w-10 h-10 text-destructive" />
-              </div>
-            </div>
+        </div>
 
-            {/* Title */}
-            <h2 className="font-display text-2xl font-bold text-center text-destructive mb-2">
-              EMERGENCY ALERT
-            </h2>
-            <p className="text-center text-muted-foreground mb-4">
-              {isSending ? "Sending emergency email..." : emailSent ? "Email sent!" : "5 blinks detected - Sending alert..."}
+        {/* Title */}
+        <h2 className="font-display text-2xl font-bold text-center text-destructive mb-2">
+          EMERGENCY ALERT
+        </h2>
+        <p className="text-center text-muted-foreground mb-4">
+          {isSending ? "Sending emergency email..." : emailSent ? "Email sent!" : "5 blinks detected - Sending alert..."}
+        </p>
+
+        {/* Email input */}
+        <div className="space-y-4">
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              type="email"
+              placeholder="Enter emergency contact email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="pl-10 bg-secondary border-destructive/30 focus:border-destructive"
+              disabled={isSending}
+            />
+          </div>
+
+          {userEmail && (
+            <p className="text-xs text-center text-success">
+              Auto-filled with your account email
             </p>
+          )}
 
-            {/* Email input */}
-            <div className="space-y-4">
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  type="email"
-                  placeholder="Enter emergency contact email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 bg-secondary border-destructive/30 focus:border-destructive"
-                  disabled={isSending}
-                />
-              </div>
+          <Button
+            onClick={handleSendEmail}
+            disabled={isSending}
+            variant="danger"
+            className="w-full"
+            size="lg"
+          >
+            {isSending ? (
+              "Sending..."
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                {emailSent ? "Resend Email" : "Send Now"}
+              </>
+            )}
+          </Button>
 
-              {userEmail && (
-                <p className="text-xs text-center text-success">
-                  Auto-filled with your account email
-                </p>
-              )}
-
-              <Button
-                onClick={handleSendEmail}
-                disabled={isSending}
-                variant="danger"
-                className="w-full"
-                size="lg"
-              >
-                {isSending ? (
-                  "Sending..."
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    {emailSent ? "Resend Email" : "Send Now"}
-                  </>
-                )}
-              </Button>
-
-              {!serviceId && (
-                <p className="text-xs text-center text-muted-foreground">
-                  Click ⚙️ to configure EmailJS for auto-sending
-                </p>
-              )}
-
-              <Button
-                onClick={onDismiss}
-                variant="outline"
-                className="w-full border-destructive/50 hover:bg-destructive/10"
-              >
-                {emailSent ? "Close" : "Cancel Alert"}
-              </Button>
-            </div>
-          </>
-        )}
+          <Button
+            onClick={onDismiss}
+            variant="outline"
+            className="w-full border-destructive/50 hover:bg-destructive/10"
+          >
+            {emailSent ? "Close" : "Cancel Alert"}
+          </Button>
+        </div>
 
         {/* Pulsing background effect */}
         <div className="absolute inset-0 -z-10 rounded-2xl overflow-hidden">
