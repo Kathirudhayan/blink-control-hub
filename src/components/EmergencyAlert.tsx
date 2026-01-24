@@ -64,10 +64,10 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
       };
 
       await emailjs.send(
-        import.meta.env.VITE_EMAILJS_SERVICE_ID,
-        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        "service_1xwhloo",
+        "template_zaxbnb8",
         templateParams,
-        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+        "vPoYQwaRs8o8-r10R"
       );
 
       toast({
