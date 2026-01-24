@@ -40,33 +40,67 @@ const handler = async (req: Request): Promise<Response> => {
       to: [to_email],
       subject: "🚨 EMERGENCY ALERT - Eye Blink Control System",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 30px; border-radius: 12px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">🚨 EMERGENCY ALERT</h1>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1a1a2e;">
+          <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px; border-radius: 16px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 32px; text-transform: uppercase; letter-spacing: 2px;">🚨 EMERGENCY ALERT 🚨</h1>
+            <p style="color: #fecaca; margin: 10px 0 0 0; font-size: 16px;">BlinkControl Safety System</p>
           </div>
           
-          <div style="background: #fef2f2; padding: 30px; border-radius: 12px; margin-top: 20px; border: 2px solid #fecaca;">
-            <p style="color: #991b1b; font-size: 18px; font-weight: bold; margin: 0 0 15px 0;">
-              An emergency alert has been triggered!
-            </p>
-            <p style="color: #7f1d1d; margin: 0 0 10px 0;">
-              The Eye Blink-Based Appliance Control System detected 5 consecutive blinks, 
-              indicating a possible emergency situation.
-            </p>
-            <p style="color: #7f1d1d; margin: 0;">
-              <strong>Time:</strong> ${time}
-            </p>
+          <div style="background: #fef2f2; padding: 30px; border-radius: 16px; margin-top: 20px; border: 3px solid #ef4444;">
+            <h2 style="color: #dc2626; font-size: 22px; margin: 0 0 20px 0; text-align: center;">
+              ⚠️ IMMEDIATE ATTENTION REQUIRED ⚠️
+            </h2>
+            
+            <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+              <h3 style="color: #991b1b; margin: 0 0 15px 0; font-size: 18px;">📋 Alert Details:</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 10px; border-bottom: 1px solid #fecaca; color: #7f1d1d; font-weight: bold;">Alert Type:</td>
+                  <td style="padding: 10px; border-bottom: 1px solid #fecaca; color: #dc2626;">Emergency Blink Signal (5 consecutive blinks)</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; border-bottom: 1px solid #fecaca; color: #7f1d1d; font-weight: bold;">Triggered At:</td>
+                  <td style="padding: 10px; border-bottom: 1px solid #fecaca; color: #dc2626;">${time}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; border-bottom: 1px solid #fecaca; color: #7f1d1d; font-weight: bold;">User Email:</td>
+                  <td style="padding: 10px; border-bottom: 1px solid #fecaca; color: #dc2626;">${to_email}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; color: #7f1d1d; font-weight: bold;">System:</td>
+                  <td style="padding: 10px; color: #dc2626;">Eye Blink-Based Appliance Control</td>
+                </tr>
+              </table>
+            </div>
+            
+            <div style="background: #fef08a; padding: 20px; border-radius: 12px; border: 2px solid #eab308;">
+              <h3 style="color: #854d0e; margin: 0 0 10px 0; font-size: 16px;">🆘 What This Means:</h3>
+              <p style="color: #713f12; margin: 0; line-height: 1.6;">
+                The user has triggered an emergency signal by blinking 5 times in rapid succession. 
+                This may indicate they need immediate assistance or are in a distressing situation.
+              </p>
+            </div>
           </div>
           
-          <div style="background: #fefce8; padding: 20px; border-radius: 12px; margin-top: 20px; border: 2px solid #fef08a;">
-            <p style="color: #854d0e; margin: 0; font-weight: bold;">
-              ⚠️ Please respond immediately to check on the user.
-            </p>
+          <div style="background: #dcfce7; padding: 25px; border-radius: 16px; margin-top: 20px; border: 2px solid #22c55e;">
+            <h3 style="color: #166534; margin: 0 0 15px 0; font-size: 18px;">✅ Recommended Actions:</h3>
+            <ul style="color: #15803d; margin: 0; padding-left: 20px; line-height: 1.8;">
+              <li>Contact the user immediately via phone or in person</li>
+              <li>Check on their physical wellbeing</li>
+              <li>If no response, consider contacting emergency services</li>
+              <li>Document the incident for future reference</li>
+            </ul>
           </div>
           
-          <p style="color: #6b7280; font-size: 12px; margin-top: 20px; text-align: center;">
-            This is an automated message from BlinkControl Emergency System
-          </p>
+          <div style="text-align: center; margin-top: 30px; padding: 20px;">
+            <p style="color: #6b7280; font-size: 12px; margin: 0;">
+              This is an automated emergency alert from BlinkControl Safety System.<br>
+              Do not reply to this email. Take immediate action if required.
+            </p>
+            <p style="color: #9ca3af; font-size: 11px; margin-top: 10px;">
+              © 2026 BlinkControl - Eye Blink-Based Appliance Control System
+            </p>
+          </div>
         </div>
       `,
     });
