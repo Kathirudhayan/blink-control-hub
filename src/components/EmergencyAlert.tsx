@@ -4,7 +4,7 @@ import { AlertTriangle, Mail, X, Send } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import emailjs from "@emailjs/browser";
 
 interface EmergencyAlertProps {
   isActive: boolean;
@@ -55,16 +55,20 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
     setIsSending(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("send-emergency-email", {
-        body: {
-          to_email: email,
-          time: new Date().toLocaleString(),
-        },
-      });
+      const templateParams = {
+        to_email: email,
+        time: new Date().toLocaleString(),
+        alert_type: "Emergency Blink Signal (5 consecutive blinks)",
+        system_name: "BlinkControl - Eye Blink-Based Appliance Control",
+        message: `EMERGENCY ALERT triggered at ${new Date().toLocaleString()}. The user has blinked 5 times in rapid succession, indicating they may need immediate assistance. Please contact them immediately to check on their wellbeing.`,
+      };
 
-      if (error) {
-        throw error;
-      }
+      await emailjs.send(
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        templateParams,
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+      );
 
       toast({
         title: "Emergency Email Sent!",
@@ -75,7 +79,7 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
       console.error("Email error:", error);
       toast({
         title: "Failed to Send",
-        description: error.message || "Please try again",
+        description: error.text || error.message || "Please try again",
         variant: "destructive",
       });
     } finally {
