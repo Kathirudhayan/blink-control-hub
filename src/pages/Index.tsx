@@ -5,6 +5,7 @@ import WebcamFeed, { WebcamFeedRef } from "@/components/WebcamFeed";
 import BlinkCounter from "@/components/BlinkCounter";
 import ApplianceDashboard from "@/components/ApplianceDashboard";
 import EmergencyAlert from "@/components/EmergencyAlert";
+import HistoryLog, { HistoryEvent } from "@/components/HistoryLog";
 import { useBlinkDetection } from "@/hooks/useBlinkDetection";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -20,6 +21,7 @@ const Index = () => {
   const [fanOn, setFanOn] = useState(false);
   const [emergencyActive, setEmergencyActive] = useState(false);
   const [sequenceCount, setSequenceCount] = useState(0);
+  const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
 
   const webcamRef = useRef<WebcamFeedRef>(null);
   const sequenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -34,11 +36,22 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
+  // Add event to history
+  const addHistoryEvent = useCallback((type: HistoryEvent["type"]) => {
+    const newEvent: HistoryEvent = {
+      id: crypto.randomUUID(),
+      type,
+      timestamp: new Date(),
+    };
+    setHistoryEvents((prev) => [newEvent, ...prev]);
+  }, []);
+
   // Process blink sequences
   const processBlinkSequence = useCallback((count: number) => {
     switch (count) {
       case 1:
         setLightOn(true);
+        addHistoryEvent("light_on");
         toast({
           title: "Light Turned ON",
           description: "1 blink detected",
@@ -46,6 +59,7 @@ const Index = () => {
         break;
       case 2:
         setLightOn(false);
+        addHistoryEvent("light_off");
         toast({
           title: "Light Turned OFF",
           description: "2 blinks detected",
@@ -53,6 +67,7 @@ const Index = () => {
         break;
       case 3:
         setFanOn(true);
+        addHistoryEvent("fan_on");
         toast({
           title: "Fan Turned ON",
           description: "3 blinks detected",
@@ -60,6 +75,7 @@ const Index = () => {
         break;
       case 4:
         setFanOn(false);
+        addHistoryEvent("fan_off");
         toast({
           title: "Fan Turned OFF",
           description: "4 blinks detected",
@@ -67,6 +83,7 @@ const Index = () => {
         break;
       case 5:
         setEmergencyActive(true);
+        addHistoryEvent("emergency");
         toast({
           title: "Emergency Alert!",
           description: "5 blinks detected - Emergency mode activated",
@@ -76,7 +93,7 @@ const Index = () => {
       default:
         break;
     }
-  }, []);
+  }, [addHistoryEvent]);
 
   // Handle individual blink
   const handleBlink = useCallback(() => {
@@ -334,6 +351,8 @@ const Index = () => {
             />
 
             <ApplianceDashboard lightOn={lightOn} fanOn={fanOn} />
+
+            <HistoryLog events={historyEvents} />
           </div>
         </div>
       </main>
