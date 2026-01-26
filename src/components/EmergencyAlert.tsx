@@ -13,10 +13,47 @@ interface EmergencyAlertProps {
   className?: string;
 }
 
+// Function to play emergency alarm sound for 5 seconds
+const playEmergencyAlarm = () => {
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const duration = 5; // 5 seconds
+  const startTime = audioContext.currentTime;
+  
+  // Create oscillating alarm pattern
+  const playTone = (startOffset: number, frequency: number, toneDuration: number) => {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(frequency, startTime + startOffset);
+    
+    gainNode.gain.setValueAtTime(0.3, startTime + startOffset);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + startOffset + toneDuration);
+    
+    oscillator.start(startTime + startOffset);
+    oscillator.stop(startTime + startOffset + toneDuration);
+  };
+  
+  // Create alternating high-low alarm pattern for 5 seconds
+  for (let i = 0; i < duration * 4; i++) {
+    const frequency = i % 2 === 0 ? 880 : 660; // Alternate between high and low
+    playTone(i * 0.25, frequency, 0.2);
+  }
+  
+  // Close audio context after alarm finishes
+  setTimeout(() => {
+    audioContext.close();
+  }, duration * 1000 + 100);
+};
+
 const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: EmergencyAlertProps) => {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const alarmPlayedRef = useRef(false);
 
   // Ref to hold the latest handleSendEmail function
   const handleSendEmailRef = useRef<() => void>(() => {});
@@ -27,6 +64,17 @@ const EmergencyAlert = ({ isActive, onDismiss, userEmail, className }: Emergency
       setEmail(userEmail);
     }
   }, [userEmail]);
+
+  // Play alarm sound when alert becomes active
+  useEffect(() => {
+    if (isActive && !alarmPlayedRef.current) {
+      alarmPlayedRef.current = true;
+      playEmergencyAlarm();
+    }
+    if (!isActive) {
+      alarmPlayedRef.current = false;
+    }
+  }, [isActive]);
 
   // Send email immediately when alert becomes active
   useEffect(() => {
