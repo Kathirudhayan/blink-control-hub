@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+
 import { Eye, Mail, Lock, User, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -12,15 +12,13 @@ const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 
 const Auth = () => {
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'otp' | 'newPassword'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'emailSent'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [otp, setOtp] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { user, loading, signIn, signUp, resetPassword, verifyOtp, updatePassword } = useAuth();
+  const { user, loading, signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in
@@ -59,84 +57,7 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Handle OTP verification
-    if (mode === 'otp') {
-      if (otp.length !== 6) {
-        toast({
-          title: 'Invalid OTP',
-          description: 'Please enter the 6-digit code from your email',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      setIsSubmitting(true);
-      try {
-        const { error } = await verifyOtp(email, otp);
-        if (error) {
-          toast({
-            title: 'Verification Failed',
-            description: error.message,
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'OTP Verified!',
-            description: 'Now set your new password.',
-          });
-          setMode('newPassword');
-        }
-      } finally {
-        setIsSubmitting(false);
-      }
-      return;
-    }
-
-    // Handle new password setting
-    if (mode === 'newPassword') {
-      try {
-        passwordSchema.parse(password);
-      } catch {
-        toast({
-          title: 'Invalid Password',
-          description: 'Password must be at least 6 characters',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        toast({
-          title: 'Passwords Do Not Match',
-          description: 'Please make sure both passwords are the same',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      setIsSubmitting(true);
-      try {
-        const { error } = await updatePassword(password);
-        if (error) {
-          toast({
-            title: 'Update Failed',
-            description: error.message,
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Password Updated!',
-            description: 'Your password has been successfully reset.',
-          });
-          navigate('/');
-        }
-      } finally {
-        setIsSubmitting(false);
-      }
-      return;
-    }
-
-    // Handle forgot password - send OTP
+    // Handle forgot password - send reset link
     if (mode === 'forgot') {
       try {
         emailSchema.parse(email);
@@ -159,11 +80,7 @@ const Auth = () => {
             variant: 'destructive',
           });
         } else {
-          toast({
-            title: 'OTP Sent!',
-            description: 'Check your email for the 6-digit verification code.',
-          });
-          setMode('otp');
+          setMode('emailSent');
         }
       } finally {
         setIsSubmitting(false);
@@ -260,8 +177,7 @@ const Auth = () => {
             {mode === 'login' && 'Welcome Back'}
             {mode === 'signup' && 'Create Account'}
             {mode === 'forgot' && 'Reset Password'}
-            {mode === 'otp' && 'Enter OTP'}
-            {mode === 'newPassword' && 'Set New Password'}
+            {mode === 'emailSent' && 'Check Your Email'}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -306,62 +222,30 @@ const Auth = () => {
               </div>
             )}
 
-            {mode === 'otp' && (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground text-center">
-                  We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span>
+            {mode === 'emailSent' && (
+              <div className="space-y-4 text-center">
+                <div className="flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Mail className="w-8 h-8 text-primary" />
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  We sent a password reset link to <span className="font-medium text-foreground">{email}</span>
                 </p>
-                <div className="flex justify-center">
-                  <InputOTP
-                    maxLength={6}
-                    value={otp}
-                    onChange={(value) => setOtp(value)}
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Click the link in your email to reset your password. The link will redirect you back here.
+                </p>
               </div>
-            )}
-
-            {mode === 'newPassword' && (
-              <>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    type="password"
-                    placeholder="New Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 bg-secondary border-border"
-                    required
-                  />
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    type="password"
-                    placeholder="Confirm New Password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 bg-secondary border-border"
-                    required
-                  />
-                </div>
-              </>
             )}
 
             {mode === 'login' && (
               <div className="text-right">
                 <button
                   type="button"
-                  onClick={() => setMode('forgot')}
+                  onClick={() => {
+                    setMode('forgot');
+                    setPassword('');
+                  }}
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   Forgot password?
@@ -369,42 +253,38 @@ const Auth = () => {
               </div>
             )}
 
-            <Button
-              type="submit"
-              variant="glow"
-              className="w-full"
-              size="lg"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {mode === 'login' && 'Signing In...'}
-                  {mode === 'signup' && 'Creating Account...'}
-                  {mode === 'forgot' && 'Sending OTP...'}
-                  {mode === 'otp' && 'Verifying...'}
-                  {mode === 'newPassword' && 'Updating...'}
-                </>
-              ) : (
-                <>
-                  {mode === 'login' && 'Sign In'}
-                  {mode === 'signup' && 'Create Account'}
-                  {mode === 'forgot' && 'Send OTP'}
-                  {mode === 'otp' && 'Verify OTP'}
-                  {mode === 'newPassword' && 'Update Password'}
-                </>
-              )}
-            </Button>
+            {mode !== 'emailSent' && (
+              <Button
+                type="submit"
+                variant="glow"
+                className="w-full"
+                size="lg"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {mode === 'login' && 'Signing In...'}
+                    {mode === 'signup' && 'Creating Account...'}
+                    {mode === 'forgot' && 'Sending Reset Link...'}
+                  </>
+                ) : (
+                  <>
+                    {mode === 'login' && 'Sign In'}
+                    {mode === 'signup' && 'Create Account'}
+                    {mode === 'forgot' && 'Send Reset Link'}
+                  </>
+                )}
+              </Button>
+            )}
           </form>
 
           <div className="mt-6 text-center space-y-2">
-            {(mode === 'forgot' || mode === 'otp' || mode === 'newPassword') ? (
+            {(mode === 'forgot' || mode === 'emailSent') ? (
               <button
                 onClick={() => {
                   setMode('login');
-                  setOtp('');
                   setPassword('');
-                  setConfirmPassword('');
                 }}
                 className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1 mx-auto"
               >
